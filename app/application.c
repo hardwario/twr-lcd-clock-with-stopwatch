@@ -139,15 +139,16 @@ void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
             return;
         }
 
-        if (cursor == 0)
+        if (clock_mode == CLOCK_MODE_SET)
         {
-            //cursor = 2;
-            clock_mode = CLOCK_MODE_DISPLAY;
-            return;
+            if (cursor == 0)
+            {
+                //cursor = 2;
+                clock_mode = CLOCK_MODE_DISPLAY;
+                return;
+            }
+            cursor--;
         }
-
-        cursor--;
-
     }
 
     if (event == BC_MODULE_LCD_EVENT_RIGHT_HOLD)
@@ -158,15 +159,16 @@ void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
             cursor = 0;
             return;
         }
-
-        if (cursor == 2)
+        if (clock_mode == CLOCK_MODE_SET)
         {
-            //cursor = 0;
-            clock_mode = CLOCK_MODE_DISPLAY;
-            return;
+            if (cursor == 2)
+            {
+                //cursor = 0;
+                clock_mode = CLOCK_MODE_DISPLAY;
+                return;
+            }
+            cursor++;
         }
-
-        cursor++;
     }
 
     if (event == BC_MODULE_LCD_EVENT_LEFT_CLICK)
@@ -191,8 +193,6 @@ void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
         {
             display_temperature = !display_temperature;
         }
-
-
     }
 
     if (event == BC_MODULE_LCD_EVENT_RIGHT_CLICK)
@@ -218,7 +218,6 @@ void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
             display_voltage = !display_voltage;
         }
     }
-
 }
 
 void tmp112_event_handler(bc_tmp112_t *self, bc_tmp112_event_t event, void *event_param)
@@ -335,6 +334,7 @@ void application_task(void)
     if (!bc_gfx_display_is_ready(pgfx))
     {
         bc_scheduler_plan_current_relative(50);
+        return;
     }
 
     if (clock_mode == CLOCK_MODE_DISPLAY)
@@ -381,7 +381,7 @@ void application_task(void)
         bc_gfx_draw_string(pgfx, 64 - w / 2, 50, str, 1);
         bc_gfx_update(pgfx);
 
-        bc_scheduler_plan_current_relative(5000);
+        //bc_scheduler_plan_current_relative(5000);
     }
     else if (clock_mode == CLOCK_MODE_SET)
     {
