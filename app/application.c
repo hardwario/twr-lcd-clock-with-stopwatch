@@ -19,6 +19,7 @@ bc_gfx_t *pgfx;
 // Stopwatch timestamp
 uint32_t timestamp;
 
+bool display_seconds = false;
 bool display_voltage = false;
 bool display_temperature = false;
 
@@ -117,17 +118,7 @@ void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
 
     if (event == BC_MODULE_LCD_EVENT_BOTH_HOLD)
     {
-        if (clock_mode == CLOCK_MODE_DISPLAY)
-        {
-            clock_mode = CLOCK_MODE_SET;
-            return;
-        }
-
-        if (clock_mode == CLOCK_MODE_SET)
-        {
-            clock_mode = CLOCK_MODE_DISPLAY;
-            return;
-        }
+        display_seconds = !display_seconds;
     }
 
     if (event == BC_MODULE_LCD_EVENT_LEFT_HOLD)
@@ -374,14 +365,28 @@ void application_task(void)
             bc_gfx_draw_string(pgfx, 64 - w / 2, 100, str, 1);
         }
 
-        snprintf(str, sizeof(str), "%d : %02d" /*":%02d"*/, rtc.hours, rtc.minutes/*, rtc.seconds*/);
+        if (display_seconds)
+        {
+            snprintf(str, sizeof(str), "%d:%02d:%02d", rtc.hours, rtc.minutes, rtc.seconds);
+        }
+        else
+        {
+            snprintf(str, sizeof(str), "%d : %02d" /*":%02d"*/, rtc.hours, rtc.minutes/*, rtc.seconds*/);
+        }
 
         bc_gfx_set_font(pgfx, &bc_font_ubuntu_33);
         int w = bc_gfx_calc_string_width(pgfx, str);
         bc_gfx_draw_string(pgfx, 64 - w / 2, 50, str, 1);
         bc_gfx_update(pgfx);
 
-        //bc_scheduler_plan_current_relative(5000);
+        if (display_seconds)
+        {
+            bc_scheduler_plan_current_relative(330);
+        }
+        else
+        {
+            bc_scheduler_plan_current_relative(5000);
+        }
     }
     else if (clock_mode == CLOCK_MODE_SET)
     {
@@ -410,7 +415,7 @@ void application_task(void)
 
         int width_total = width_hours + width_colon + width_tenth_minutes + width_single_minutes;
 
-        snprintf(str, sizeof(str), "%d : %02d" /*":%02d"*/, rtc.hours, rtc.minutes/*, rtc.seconds*/);
+        snprintf(str, sizeof(str), "%d : %02d", rtc.hours, rtc.minutes);
 
         int offset_left = 64 - width_total / 2;
 
