@@ -36,8 +36,8 @@ typedef enum
     CLOCK_MODE_STOPWATCH
 } clock_mode_t;
 
-#define TEMPERATURE_UPDATE_INTERVAL 5000
-#define ACCELEROMETER_UPDATE_INTERVAL 1000
+#define TEMPERATURE_UPDATE_INTERVAL (2 * 60 * 1000)
+#define ACCELEROMETER_UPDATE_INTERVAL (2 * 1000)
 #define BATTERY_UPDATE_INTERVAL (5 * 60 * 1000)
 
 float voltage;
@@ -112,8 +112,6 @@ void rtc_change_time(rtc_change_t change, int increment)
 
 void lcd_event_handler(bc_module_lcd_event_t event, void *event_param)
 {
-    bc_log_debug("LCD event 0x%X", event);
-
     bc_scheduler_plan_relative(APPLICATION_TASK_ID, 10);
 
     if (event == BC_MODULE_LCD_EVENT_BOTH_HOLD)
@@ -215,11 +213,7 @@ void tmp112_event_handler(bc_tmp112_t *self, bc_tmp112_event_t event, void *even
 {
     if (event == BC_TMP112_EVENT_UPDATE)
     {
-        // Successfully read temperature?
-        if (bc_tmp112_get_temperature_celsius(self, &temperature))
-        {
-            bc_log_info("APP: Temperature = %0.1f C", temperature);
-        }
+        bc_tmp112_get_temperature_celsius(self, &temperature);
     }
 }
 
@@ -230,10 +224,7 @@ void battery_event_handler(bc_module_battery_event_t event, void *event_param)
 
     if (event == BC_MODULE_BATTERY_EVENT_UPDATE)
     {
-        if (bc_module_battery_get_voltage(&voltage))
-        {
-            bc_log_info("APP: voltage = %0.1f C", voltage);
-        }
+        bc_module_battery_get_voltage(&voltage);
     }
 }
 
@@ -248,7 +239,7 @@ void lis2dh12_event_handler(bc_lis2dh12_t *self, bc_lis2dh12_event_t event, void
         // Successfully read accelerometer vectors?
         if (bc_lis2dh12_get_result_g(self, &result))
         {
-            bc_log_info("APP: Acceleration = [%.2f,%.2f,%.2f]", result.x_axis, result.y_axis, result.z_axis);
+            //bc_log_info("APP: Acceleration = [%.2f,%.2f,%.2f]", result.x_axis, result.y_axis, result.z_axis);
 
             // Update dice with new vectors
             bc_dice_feed_vectors(&dice, result.x_axis, result.y_axis, result.z_axis);
@@ -266,9 +257,8 @@ void lis2dh12_event_handler(bc_lis2dh12_t *self, bc_lis2dh12_event_t event, void
                 last_face = dice_face;
 
                 // Convert dice face to integer
-                int orientation = dice_face;
-
-                bc_log_info("orientation = %d", orientation);
+                //int orientation = dice_face;
+                //bc_log_info("orientation = %d", orientation);
                 if (clock_mode == CLOCK_MODE_DISPLAY && dice_face == 3)
                 {
                     clock_mode = CLOCK_MODE_STOPWATCH;
@@ -290,7 +280,7 @@ void lis2dh12_event_handler(bc_lis2dh12_t *self, bc_lis2dh12_event_t event, void
 void application_init(void)
 {
     // Initialize logging
-    bc_log_init(BC_LOG_LEVEL_DUMP, BC_LOG_TIMESTAMP_ABS);
+    //bc_log_init(BC_LOG_LEVEL_DUMP, BC_LOG_TIMESTAMP_ABS);
 
     // Initialize LED
     bc_led_init(&led, BC_GPIO_LED, false, false);
@@ -371,7 +361,7 @@ void application_task(void)
         }
         else
         {
-            snprintf(str, sizeof(str), "%d : %02d" /*":%02d"*/, rtc.hours, rtc.minutes/*, rtc.seconds*/);
+            snprintf(str, sizeof(str), "%d : %02d", rtc.hours, rtc.minutes);
         }
 
         bc_gfx_set_font(pgfx, &bc_font_ubuntu_33);
