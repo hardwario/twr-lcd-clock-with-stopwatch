@@ -51,14 +51,14 @@ int cursor = 0;
 
 void rtc_change_time(rtc_change_t change, int increment)
 {
-    twr_rtc_t rtc;
-    twr_rtc_get_date_time(&rtc);
+    struct tm rtc;
+    twr_rtc_get_datetime(&rtc);
 
     switch (change)
     {
         case RTC_CHANGE_HOURS:
         {
-            int hours_temp = rtc.hours;
+            int hours_temp = rtc.tm_hour;
             hours_temp += increment;
 
             if (hours_temp > 23)
@@ -70,14 +70,14 @@ void rtc_change_time(rtc_change_t change, int increment)
                 hours_temp = 24 + (hours_temp % 24);
             }
 
-            rtc.hours = hours_temp;
+            rtc.tm_hour = hours_temp;
 
             break;
         }
 
         case RTC_CHANGE_MINUTES:
         {
-            int minutes_temp = rtc.minutes;
+            int minutes_temp = rtc.tm_min;
             minutes_temp += increment;
 
             if (minutes_temp > 59)
@@ -89,7 +89,7 @@ void rtc_change_time(rtc_change_t change, int increment)
                 minutes_temp = 60 + (minutes_temp % 60);
             }
 
-            rtc.minutes = minutes_temp;
+            rtc.tm_min = minutes_temp;
             break;
         }
 
@@ -101,11 +101,11 @@ void rtc_change_time(rtc_change_t change, int increment)
 
     // Set year to non-zero value so RTC init code
     // would not reinitialize RTC after reset
-    rtc.year = 1;
+    rtc.tm_year = 1;
 
-    rtc.seconds = 0;
+    rtc.tm_sec = 0;
 
-    twr_rtc_set_date_time(&rtc);
+    twr_rtc_set_datetime(&rtc, 0);
 
     twr_scheduler_plan_now(APPLICATION_TASK_ID);
 }
@@ -262,9 +262,9 @@ void lis2dh12_event_handler(twr_lis2dh12_t *self, twr_lis2dh12_event_t event, vo
                 if (clock_mode == CLOCK_MODE_DISPLAY && dice_face == 3)
                 {
                     clock_mode = CLOCK_MODE_STOPWATCH;
-                    twr_rtc_t rtc;
-                    twr_rtc_get_date_time(&rtc);
-                    timestamp = rtc.timestamp;
+                    struct tm rtc;
+                    twr_rtc_get_datetime(&rtc);
+                    timestamp = twr_rtc_datetime_to_timestamp(&rtc);
                 }
                 else if (clock_mode == CLOCK_MODE_STOPWATCH && dice_face != 3)
                 {
@@ -321,8 +321,8 @@ void application_task(void)
     if (clock_mode == CLOCK_MODE_DISPLAY)
     {
         char str[16];
-        twr_rtc_t rtc;
-        twr_rtc_get_date_time(&rtc);
+        struct tm rtc;
+        twr_rtc_get_datetime(&rtc);
 
         twr_gfx_clear(pgfx);
 
@@ -357,11 +357,11 @@ void application_task(void)
 
         if (display_seconds)
         {
-            snprintf(str, sizeof(str), "%d:%02d:%02d", rtc.hours, rtc.minutes, rtc.seconds);
+            snprintf(str, sizeof(str), "%d:%02d:%02d", rtc.tm_hour, rtc.tm_min, rtc.tm_sec);
         }
         else
         {
-            snprintf(str, sizeof(str), "%d : %02d", rtc.hours, rtc.minutes);
+            snprintf(str, sizeof(str), "%d : %02d", rtc.tm_hour, rtc.tm_min);
         }
 
         twr_gfx_set_font(pgfx, &twr_font_ubuntu_33);
@@ -384,28 +384,28 @@ void application_task(void)
         twr_system_pll_enable();
 
         char str[16];
-        twr_rtc_t rtc;
-        twr_rtc_get_date_time(&rtc);
+        struct tm rtc;
+        twr_rtc_get_datetime(&rtc);
 
         twr_gfx_set_font(pgfx, &twr_font_ubuntu_33);
         twr_gfx_clear(pgfx);
         twr_gfx_set_rotation(pgfx, TWR_GFX_ROTATION_0);
 
-        snprintf(str, sizeof(str), "%d", rtc.hours);
+        snprintf(str, sizeof(str), "%d", rtc.tm_hour);
         int width_hours = twr_gfx_calc_string_width(pgfx, str);
 
         snprintf(str, sizeof(str), " : ");
         int width_colon = twr_gfx_calc_string_width(pgfx, str);
 
-        snprintf(str, sizeof(str), "%d", rtc.minutes / 10);
+        snprintf(str, sizeof(str), "%d", rtc.tm_min / 10);
         int width_tenth_minutes = twr_gfx_calc_string_width(pgfx, str);
 
-        snprintf(str, sizeof(str), "%d", rtc.minutes % 10);
+        snprintf(str, sizeof(str), "%d", rtc.tm_min % 10);
         int width_single_minutes = twr_gfx_calc_string_width(pgfx, str);
 
         int width_total = width_hours + width_colon + width_tenth_minutes + width_single_minutes;
 
-        snprintf(str, sizeof(str), "%d : %02d", rtc.hours, rtc.minutes);
+        snprintf(str, sizeof(str), "%d : %02d", rtc.tm_hour, rtc.tm_min);
 
         int offset_left = 64 - width_total / 2;
 
@@ -442,13 +442,13 @@ void application_task(void)
     else if (clock_mode == CLOCK_MODE_STOPWATCH)
     {
         char str[16];
-        twr_rtc_t rtc;
-        twr_rtc_get_date_time(&rtc);
+        struct tm rtc;
+        twr_rtc_get_datetime(&rtc);
 
         twr_gfx_set_font(pgfx, &twr_font_ubuntu_33);
         twr_gfx_set_rotation(pgfx, TWR_GFX_ROTATION_180);
 
-        int timestamp_diff = rtc.timestamp - timestamp;
+        int timestamp_diff = twr_rtc_datetime_to_timestamp(&rtc) - timestamp;
 
         snprintf(str, sizeof(str), "%d : %02d" , timestamp_diff / 60, timestamp_diff % 60);
 
